@@ -51,12 +51,15 @@ export class Observatory<
   addObserver(
     observer: Observer<ObservationEvent, ObservationLevel, ObservationId>,
   ) {
-    this.observationSubject.subscribe((observation) => {
-      const shouldObserve = (observer.observeWhen === undefined || typeof observer.observeWhen === 'boolean') ? observer.observeWhen === undefined ? true : Boolean(observer.observeWhen) : observer.observeWhen()
-      if (shouldObserve && observer.levelsToObserve.includes(observation.level)) {
-        observer.onObservation(observation)
-      }
-    })
+    const shouldObserverSubscribe = (observer.observeWhen === undefined || typeof observer.observeWhen === 'boolean') ? observer.observeWhen === undefined ? true : Boolean(observer.observeWhen) : observer.observeWhen()
+
+    if (shouldObserverSubscribe) {
+      this.observationSubject.subscribe((observation) => {
+        if (observer.levelsToObserve.includes(observation.level)) {
+          observer.onObservation(observation)
+        }
+      })
+    }
 
     this.observers.push(observer)
 
