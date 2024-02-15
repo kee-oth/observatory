@@ -1,3 +1,3 @@
-export { createChronicle } from './Observatory'
-export type { Chronicle } from './Observatory'
+export { createObservatory } from './Observatory'
 
+export type { Observatory, Observer, Observation } from './Observatory'
