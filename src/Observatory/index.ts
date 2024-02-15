@@ -1,63 +1,90 @@
+import { Subject } from 'rxjs'
 
-
-/**
- * Requirements
- * 
- * 1. Performant
- * 2. Ergonomic and simple to use
- * 3. Doesn't get in the way
- * 
- * Features
- * 
- * 1. Can create a single or multiple observatories
- * 2. Can hook up many loggers to do whatever
- * 3. Should be able to include plugins to hook up to logging services
- * 4. Need to accomodate asynchronous logging
- * 5. Should export a default Observation type
- * 
- */
-
-// shoudl do this, and Context should be what the consuming dev sets, that we we can use observationLevel on here
-export type Observation<Message = string, Context = never> = {
-  context: Context,
-  id: string,
-  message: Message,
-  timestamp: Date,
+export type Observation<ObservationEvent, ObservationLevel, ObservationId> = {
+  event: ObservationEvent
+  level: ObservationLevel
+  id: ObservationId
+  timestamp: Date
 }
 
-// which function in here?
-type Observer<Observation = never> = {
-  observe: (observation: Observation) => void
-  onObservation: (observation: Observation) => void
+export type Observer<ObservationEvent, ObservationLevel, ObservationId> = {
+  observeWhen?: boolean | (() => boolean)
+  levelsToObserve: ObservationLevel[]
+  onObservation: (
+    observation: Observation<ObservationEvent, ObservationLevel, ObservationId>
+  ) => void
 }
 
-type Observers<Observation = never> = Observer<Observation>[]
+type ObservationLevelDefault =
+  | 'ERROR'
+  | 'FAILURE'
+  | 'LOG'
+  | 'PERFORMANCE'
+  | 'MONITORING'
+  | 'WARNING'
 
-type ObservatoryConstructorParams<Observation = never> = {
-  observers: Observers<Observation>
-  onObservation: (observation: Observation) => void // actually shouldn't have this, that's what observeers do
-}
+export class Observatory<
+  ObservationEvent = never,
+  ObservationLevel = ObservationLevelDefault,
+  ObservationId = string,
+> {
+  declare private observationSubject: Subject<Observation<ObservationEvent, ObservationLevel, ObservationId>>
+  private observers: Observer<
+    ObservationEvent,
+    ObservationLevel,
+    ObservationId
+  >[] = []
 
-export class Observatory<ObservationContext = never, ObservationLevel> {
-  declare private observations: Observation[] // is there a way to "watch" this and run onObservation when a new one is added? Otherwise, just do it on `logObservation`
-  declare private observers: Observer[]
-  declare private onObservation: (observation: Observation) => void
+  private observationIdGenerator: () => ObservationId = () =>
+    crypto.randomUUID() as ObservationId
 
-  constructor({ observers, onObservation }: ObservatoryConstructorParams<Observation>) {
-    this.observers = observers
-    this.onObservation = onObservation
+  constructor() {
+    this.observationSubject = new Subject<
+      Observation<ObservationEvent, ObservationLevel, ObservationId>
+    >()
   }
 
-  getObservations(): Observation[] {
-    return this.observations
+  setObservationIdGenerator(idGenerator: () => ObservationId) {
+    this.observationIdGenerator = idGenerator
   }
 
-  logObservation(observation: Observation): void {
-    this.observations.push(observation)
-    this.onObservation(observation)
+  addObserver(
+    observer: Observer<ObservationEvent, ObservationLevel, ObservationId>,
+  ) {
+    this.observationSubject.subscribe((observation) => {
+      const shouldObserve = (observer.observeWhen === undefined || typeof observer.observeWhen === 'boolean') ? observer.observeWhen === undefined ? true : Boolean(observer.observeWhen) : observer.observeWhen()
+      if (shouldObserve && observer.levelsToObserve.includes(observation.level)) {
+        observer.onObservation(observation)
+      }
+    })
+
+    this.observers.push(observer)
+
+    return this
+  }
+
+  logObservation = (
+    observationLevel: ObservationLevel,
+    observationEvent: ObservationEvent,
+    when: boolean | (() => boolean) = true,
+  ) => {
+    const shouldLogObservation = typeof when === 'boolean' ? Boolean(when) : when()
+
+    if (shouldLogObservation) {
+      this.observationSubject.next({
+        event: observationEvent,
+        id: this.observationIdGenerator(),
+        level: observationLevel,
+        timestamp: new Date(),
+      })
+    }
   }
 }
 
-const createObservatory = () => {
-  // return new Observatory()
+export function createObservatory<
+  ObservationEvent = never,
+  ObservationLevel = ObservationLevelDefault,
+  ObservationId = string,
+>() {
+  return new Observatory<ObservationEvent, ObservationLevel, ObservationId>()
 }

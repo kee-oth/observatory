@@ -1,15 +1,32 @@
 import { describe, expect, it, vi } from 'vitest'
+import { createObservatory } from './'
 
-
-describe('createChronicle', () => {
-  it('should create an initial Event on Chronicle creation', () => {
+describe('createObservatory', () => {
+  it('should be able to make logs', () => {
     // Setup
-    // const initialEvent = 'Initial event'
+    const callbackForLog = vi.fn()
+    const callbackForError = vi.fn()
 
-    // // Test
-    // const chronicle = createChronicle(initialEvent)
+    const { logObservation } = createObservatory<string>()
+      .addObserver({
+        levelsToObserve: ['LOG'],
+        onObservation(observation) {
+          callbackForLog(observation)
+        },
+      })
+      .addObserver({
+        levelsToObserve: ['ERROR'],
+        onObservation(observation) {
+          callbackForError(observation)
+        },
+      })
 
-    // // Assert
-    // expect(chronicle.getCurrentEvent()).toEqual(initialEvent)
+    // Test
+    logObservation('ERROR', 'SOME ERROR!')
+    logObservation('LOG', 'SOME LOG!')
+
+    // Setup
+    expect(callbackForError).toHaveBeenCalledOnce()
+    expect(callbackForLog).toHaveBeenCalledOnce()
   })
 })
