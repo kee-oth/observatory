@@ -14,7 +14,33 @@ Please open an issue if you want to
 
 ## What is Observatory?
 
-Observatory is a logging library.
+Observatory is a logging framework.
+
+### What's a logging framework?
+
+Observatory does not provide actual logging functionality but instead provides an ergonomic way to setup logging in your JavaScript or TypeScript application. Observatory provides a way to route logging requests and you provide the actual logging functionality.
+
+Here's an example:
+```ts
+type ObservationEvent = string // or whatever you'd like
+type ObservationLevel = 'ERROR' | 'INFO' // or whatever you'd like
+const { logObservation } = createObservatory<ObservationEvent, ObservationLevel>()
+  .addObserver({
+    levelsToObserve: ['ERROR'],
+    onObservation(observation) {
+      yourErrorLogger(observation) // you have access to all observations of levels `ERROR`
+    },
+  })
+  .addObserver({
+    levelsToObserve: ['INFO'],
+    onObservation(observation) {
+      yourInfoLogger(observation) // you have access to all observations of levels `INFO`
+    },
+  })
+
+logObservation('ERROR', 'SOME ERROR!') // this observation will ultimately be processed by `yourErrorLogger`
+logObservation('INFO', 'SOME ERROR!') // this observation will ultimately be processed by `yourInfoLogger`
+```
 
 ### Features
 
@@ -28,8 +54,9 @@ Observatory has 1 dependencies (`rxjs`). The goal is to refactor this out after 
 
 #### Create Observatory and log Observation Event
 ```ts
-type ObservationEvent = 'ERROR' | 'WARNING' | 'INFO'
-const { logObservation } = createObservatory<ObservationEvent>()
+type ObservationEvent = string // or whatever you'd like
+type ObservationLevel = 'ERROR' | 'WARNING' | 'INFO' // or whatever you'd like
+const { logObservation } = createObservatory<ObservationEvent, ObservationLevel>()
   .addObserver({
     levelsToObserve: ['ERROR', 'WARNING'],
     onObservation(observation) {
@@ -44,8 +71,9 @@ logObservation('INFO', 'SOME INFO!') // will not run
 
 #### Create Observatory with multiple Observers
 ```ts
-type ObservationEvent = 'ERROR' | 'WARNING' | 'INFO'
-const { logObservation } = createObservatory<ObservationEvent>()
+type ObservationEvent = string
+type ObservationLevel = 'ERROR' | 'WARNING' | 'INFO'
+const { logObservation } = createObservatory<ObservationEvent, ObservationLevel>()
   .addObserver({
     levelsToObserve: ['ERROR'],
     onObservation(observation) {
@@ -68,8 +96,9 @@ logObservation('INFO', 'SOME INFO!') // will not run
 ```ts
 const isTestEnvironment = false
 
-type ObservationEvent = 'ERROR'
-const { logObservation } = createObservatory<ObservationEvent>()
+type ObservationEvent = string
+type ObservationLevel = 'ERROR'
+const { logObservation } = createObservatory<ObservationEvent, ObservationLevel>()
   .addObserver({
     when: isTestEnvironment,
     levelsToObserve: ['ERROR'],
@@ -85,8 +114,9 @@ logObservation('ERROR', 'SOME ERROR!') // will not run
 ```ts
 const isTestEnvironment = false
 
-type ObservationEvent = 'ERROR'
-const { logObservation } = createObservatory<ObservationEvent>()
+type ObservationEvent = string
+type ObservationLevel = 'ERROR'
+const { logObservation } = createObservatory<ObservationEvent, ObservationLevel>()
   .addObserver({
     levelsToObserve: ['ERROR'],
     onObservation(observation) {

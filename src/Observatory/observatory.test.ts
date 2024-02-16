@@ -2,14 +2,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { createObservatory } from './'
 
 describe('createObservatory', () => {
-  it('should be able to make logs', () => {
+  it('should be able to log Observations to different Observing', () => {
     // Setup
     const callbackForLog = vi.fn()
     const callbackForError = vi.fn()
 
     const { logObservation } = createObservatory<string>()
       .addObserver({
-        levelsToObserve: ['LOG'],
+        levelsToObserve: ['INFO'],
         onObservation(observation) {
           callbackForLog(observation)
         },
@@ -23,7 +23,7 @@ describe('createObservatory', () => {
 
     // Test
     logObservation('ERROR', 'SOME ERROR!')
-    logObservation('LOG', 'SOME LOG!')
+    logObservation('INFO', 'SOME INFO!')
 
     // Assert
     expect(callbackForError).toHaveBeenCalledOnce()
@@ -36,14 +36,14 @@ describe('createObservatory', () => {
     const { logObservation } = createObservatory<string>()
       .addObserver({
         observeWhen: false,
-        levelsToObserve: ['LOG'],
+        levelsToObserve: ['INFO'],
         onObservation(observation) {
           callback(observation)
         },
       })
 
     // Test
-    logObservation('LOG', 'SOME LOG!')
+    logObservation('INFO', 'SOME INFO!')
 
     // Assert
     expect(callback).not.toHaveBeenCalled()
@@ -54,15 +54,16 @@ describe('createObservatory', () => {
     const callback = vi.fn()
     const { logObservation } = createObservatory<string>()
       .addObserver({
-        levelsToObserve: ['LOG'],
+        levelsToObserve: ['INFO'],
         onObservation(observation) {
           callback(observation)
         },
       })
+      .setObservationIdGenerator(() => 'fish')
 
     // Test
-    logObservation('LOG', 'SOME LOG!', true)
-    logObservation('LOG', 'SOME LOG!', false)
+    logObservation('INFO', 'SOME INFO!', true)
+    logObservation('INFO', 'SOME INFO!', false)
 
     // Assert
     expect(callback).toHaveBeenCalledOnce()
