@@ -1,4 +1,5 @@
 import { Subject } from 'rxjs'
+import type { Plugin } from '../plugins'
 
 export type Observation<Event, Level, Id> = {
   event: Event
@@ -50,7 +51,10 @@ class Observatory<Event, Level, ObservationId> {
       })
     }
 
-    this.observers.push(observer)
+    this.observers.push({
+      ...observer,
+      levelsToObserve: observer.levelsToObserve || [],
+    })
 
     return this
   }
@@ -70,6 +74,10 @@ class Observatory<Event, Level, ObservationId> {
         timestamp: new Date(),
       })
     }
+  }
+
+  usePlugin(plugin: Plugin<Event, Level, ObservationId>) {
+    return plugin.setup(this)
   }
 }
 export type { Observatory }
